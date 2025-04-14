@@ -76,7 +76,7 @@
                 label: 'Inflow',
                 data: inflows,
                 fill: false,
-                borderColor: 'rgba(92, 184, 178, 1)', // Inflow color: rgb(92, 184, 178)
+                borderColor: 'rgba(92, 184, 178, 1)', // Inflow color
                 backgroundColor: 'rgba(92, 184, 178, 0.2)',
                 tension: 0.1
               },
@@ -84,7 +84,7 @@
                 label: 'Outflow',
                 data: outflows,
                 fill: false,
-                borderColor: 'rgba(0, 51, 160, 1)', // Outflow color: rgb(0, 51, 160)
+                borderColor: 'rgba(0, 51, 160, 1)', // Outflow color
                 backgroundColor: 'rgba(0, 51, 160, 0.2)',
                 tension: 0.1
               }
@@ -103,16 +103,23 @@
               }
             },
             scales: {
-              // X-axis with a time scale; titles removed
               x: {
                 type: 'time',
                 time: {
                   unit: 'day',
                   tooltipFormat: 'yyyy-MM-dd'
+                },
+                title: {
+                  display: true,
+                  text: 'Date'
                 }
               },
-              // Y-axis with titles removed
-              y: {}
+              y: {
+                title: {
+                  display: true,
+                  text: 'Amount'
+                }
+              }
             }
           }
         });
