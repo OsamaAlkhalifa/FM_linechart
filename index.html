@@ -2,69 +2,56 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Refined Inflow and Outflow Chart</title>
+  <title>Inflow and Outflow Line Chart</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <!-- Load Chart.js from CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- Load Papa Parse from CDN for CSV parsing -->
+  <!-- Load Papa Parse from CDN to parse CSV files -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
   <style>
     body {
-      font-family: "Gill Sans Nova", "Gill Sans", sans-serif;
+      font-family: Arial, sans-serif;
       padding: 20px;
       background-color: #f7f7f7;
       text-align: center;
     }
     #chart-container {
       width: 80%;
-      max-width: 1000px;
+      max-width: 800px;
       margin: 0 auto;
-    }
-    #loader {
-      font-size: 1.2em;
-      margin-top: 20px;
     }
   </style>
 </head>
 <body>
-  <h1>Refined Inflow and Outflow Chart</h1>
+  <h1>Inflow and Outflow Chart</h1>
   <div id="chart-container">
     <canvas id="lineChart"></canvas>
-    <div id="loader">Loading data...</div>
   </div>
   
   <script>
-    // Hide the loader once data is loaded
-    function hideLoader() {
-      document.getElementById("loader").style.display = "none";
-    }
-    
-    // Convert a date string (e.g., '2025-04-01') to a JavaScript Date object
-    function parseDate(dateStr) {
-      return new Date(dateStr);
-    }
-    
-    // Parse the CSV file using Papa Parse
+    // Use Papa Parse to load the CSV file
     Papa.parse("data.csv", {
       download: true,
       header: true,
       dynamicTyping: true,
       complete: function(results) {
+        // Log the parsed CSV data to the console (for debugging)
+        console.log(results.data);
         const dates = [];
         const inflows = [];
         const outflows = [];
         
-        // Process each row in the CSV
+        // Loop through each row of the CSV
         results.data.forEach(function(row) {
-          // Ensure the row has the required columns: Date, Inflow, and Outflow
-          if (row.Date && row.Inflow !== undefined && row.Outflow !== undefined) {
-            dates.push(parseDate(row.Date));
+          // Check if required fields exist before adding them to the arrays
+          if(row.Date && row.Inflow !== undefined && row.Outflow !== undefined) {
+            dates.push(row.Date);
             inflows.push(row.Inflow);
             outflows.push(row.Outflow);
           }
         });
         
-        // Create the line chart using Chart.js with a time-based x-axis
+        // Create the line chart using Chart.js
         const ctx = document.getElementById('lineChart').getContext('2d');
         new Chart(ctx, {
           type: 'line',
@@ -75,58 +62,41 @@
                 label: 'Inflow',
                 data: inflows,
                 fill: false,
-                borderColor: 'rgba(92, 184, 178, 1)',
-                backgroundColor: 'rgba(92, 184, 178, 0.2)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                backgroundColor: 'rgba(54, 162, 235, 0.2)',
                 tension: 0.1
               },
               {
                 label: 'Outflow',
                 data: outflows,
                 fill: false,
-                borderColor: 'rgba(0, 51, 160, 1)',
-                backgroundColor: 'rgba(0, 51, 160, 0.2)',
+                borderColor: 'rgba(255, 99, 132, 1)',
+                backgroundColor: 'rgba(255, 99, 132, 0.2)',
                 tension: 0.1
               }
             ]
           },
           options: {
             responsive: true,
-            interaction: {
-              mode: 'index',
-              intersect: false
-            },
-            plugins: {
-              tooltip: {
-                mode: 'index',
-                intersect: false
-              }
-            },
             scales: {
               x: {
-                type: 'time',
-                time: {
-                  unit: 'day',
-                  tooltipFormat: 'yyyy-MM-dd'
-                },
                 title: {
-                  display: false,
+                  display: true,
                   text: 'Date'
                 }
               },
               y: {
                 title: {
-                  display: false,
+                  display: true,
                   text: 'Amount'
                 }
               }
             }
           }
         });
-        hideLoader();
       },
       error: function(error) {
         console.error("Error parsing CSV:", error);
-        document.getElementById("loader").innerText = "Error loading data.";
       }
     });
   </script>
