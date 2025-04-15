@@ -8,14 +8,14 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
   <style>
     body {
-      font-family: "Gill Sans Nova", "Gill Sans", sans-serif;
+      font-family: sans-serif;
       padding: 20px;
       background-color: #f5f5f5;
       text-align: center;
     }
     #chart-container {
-      width: 80%;
-      max-width: 2000px;
+      width: 90%;
+      max-width: 1400px;
       margin: 0 auto;
     }
     .filters {
@@ -28,6 +28,8 @@
   </style>
 </head>
 <body>
+  <h2>Inflow and Outflow by Country</h2>
+
   <div class="filters">
     <label for="country">Country:</label>
     <select id="country">
@@ -51,25 +53,30 @@
   <script>
     let chart;
 
+    function normalizeValue(val) {
+      return typeof val === "number" ? val : Number(val.toString().replace(/,/g, '').trim()) || 0;
+    }
+
     function updateChart(data, country, flowType) {
       const dates = [];
       const inflows = [];
       const outflows = [];
 
       data.forEach(row => {
-        dates.push(row["date"]);
+        const date = row["date"]?.trim();
+        if (!date) return;
+        dates.push(date);
 
         if (country === "TOTAL") {
-          inflows.push(row["TOTAL - INFLOW"]);
-          outflows.push(row["TOTAL - OUTFLOW"]);
+          inflows.push(normalizeValue(row["TOTAL - INFLOW"]));
+          outflows.push(normalizeValue(row["TOTAL - OUTFLOW"]));
         } else {
-          inflows.push(row[`INFLOW - ${country}`]);
-          outflows.push(row[`OUTFLOW - ${country}`]);
+          inflows.push(normalizeValue(row[`INFLOW - ${country}`]));
+          outflows.push(normalizeValue(row[`OUTFLOW - ${country}`]));
         }
       });
 
       const datasets = [];
-
       if (flowType === "INFLOW" || flowType === "BOTH") {
         datasets.push({
           label: "Inflow",
@@ -80,7 +87,6 @@
           tension: 0.1
         });
       }
-
       if (flowType === "OUTFLOW" || flowType === "BOTH") {
         datasets.push({
           label: "Outflow",
@@ -114,7 +120,8 @@
               title: { display: true, text: 'Date' }
             },
             y: {
-              title: { display: true, text: 'Count' }
+              title: { display: true, text: 'Individuals' },
+              beginAtZero: true
             }
           }
         }
@@ -124,7 +131,7 @@
     Papa.parse("data.csv", {
       download: true,
       header: true,
-      dynamicTyping: true,
+      dynamicTyping: false,
       complete: function(results) {
         const rawData = results.data.filter(row => row["date"]);
         const countrySelect = document.getElementById("country");
@@ -135,7 +142,6 @@
         countrySelect.addEventListener("change", () => {
           updateChart(rawData, countrySelect.value, flowSelect.value);
         });
-
         flowSelect.addEventListener("change", () => {
           updateChart(rawData, countrySelect.value, flowSelect.value);
         });
