@@ -8,7 +8,7 @@
   <link rel="icon" href="data:;base64,iVBORw0KGgo=">
   <!-- Load Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- Load the Chart.js date adapter (using date-fns) -->
+  <!-- Load Chart.js date adapter (using date-fns) -->
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
   <!-- Load Papa Parse -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
@@ -28,7 +28,7 @@
       font-size: 1.2em;
       margin-top: 20px;
     }
-    /* Container for the filter dropdown */
+    /* Container for filter dropdown */
     #filter-container {
       text-align: right;
       margin-bottom: 10px;
@@ -42,11 +42,10 @@
 <body>
   <h1>Refined Inflow and Outflow Chart</h1>
   
-  <!-- Dropdown to select which data to display -->
+  <!-- Dropdown to select which series to display -->
   <div id="filter-container">
     <label for="countryFilter">Select Data: </label>
     <select id="countryFilter">
-      <!-- The value attribute controls which series are shown -->
       <option value="iran">Iran</option>
       <option value="pakistan">Pakistan</option>
       <option value="total">Total</option>
@@ -57,137 +56,3 @@
     <canvas id="lineChart"></canvas>
     <div id="loader">Loading data...</div>
   </div>
-  
-  <script>
-    let allData = [];       // Global storage for CSV rows
-    let lineChartInstance;  // Reference to our Chart.js chart
-
-    // Hide the loader element.
-    function hideLoader() {
-      document.getElementById("loader").style.display = "none";
-    }
-    
-    // Parse a date string (e.g., "2025-04-01") into a Date object.
-    function parseDate(dateStr) {
-      const d = new Date(dateStr);
-      if (isNaN(d)) {
-        console.error("Invalid date encountered:", dateStr);
-      }
-      return d;
-    }
-    
-    // Create (or re-create) the chart with the given x-axis (dates) and y-axis arrays.
-    function renderChart(dates, inflows, outflows) {
-      const ctx = document.getElementById('lineChart').getContext('2d');
-      if (lineChartInstance) {
-        lineChartInstance.destroy();
-      }
-      
-      lineChartInstance = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: dates,
-          datasets: [
-            {
-              label: 'Inflow',
-              data: inflows,
-              fill: false,
-              borderColor: 'rgba(92, 184, 178, 1)',
-              backgroundColor: 'rgba(92, 184, 178, 0.2)',
-              tension: 0.1
-            },
-            {
-              label: 'Outflow',
-              data: outflows,
-              fill: false,
-              borderColor: 'rgba(0, 51, 160, 1)',
-              backgroundColor: 'rgba(0, 51, 160, 0.2)',
-              tension: 0.1
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          interaction: { mode: 'index', intersect: false },
-          plugins: { tooltip: { mode: 'index', intersect: false } },
-          scales: {
-            x: {
-              type: 'time',
-              time: {
-                unit: 'day',
-                tooltipFormat: 'yyyy-MM-dd'
-              },
-              title: {
-                display: true,
-                text: 'Date'
-              }
-            },
-            y: {
-              title: {
-                display: true,
-                text: 'Amount'
-              }
-            }
-          }
-        }
-      });
-    }
-    
-    // Update the chart based on the filter selection.
-    // We always use the full set of dates from the CSV, ensuring the x-axis remains identical.
-    function updateChartByFilter() {
-      const selected = document.getElementById("countryFilter").value;  // "iran", "pakistan", or "total"
-      // Make a sorted copy of allData by date:
-      const sortedData = allData.slice().sort((a, b) => new Date(a.Date) - new Date(b.Date));
-      // Always compute the full x-axis from the Date column.
-      const dates = sortedData.map(row => parseDate(row.Date));
-      
-      // For the series values, simply map the corresponding column:
-      let inflows = sortedData.map(row => {
-        if (selected === "iran") return row["INFLOW - IRAN"];
-        else if (selected === "pakistan") return row["INFLOW - PAKISTAN"];
-        else if (selected === "total") return row["TOTAL-INFLOW"];
-      });
-      
-      let outflows = sortedData.map(row => {
-        if (selected === "iran") return row["OUTFLOW - IRAN"];
-        else if (selected === "pakistan") return row["OUTFLOW - PAKISTAN"];
-        else if (selected === "total") return row["TOTAL-OUTFLOW"];
-      });
-      
-      console.log("X-Axis Dates:", dates);
-      console.log("Selected series (" + selected + ") - Inflows:", inflows);
-      console.log("Selected series (" + selected + ") - Outflows:", outflows);
-      
-      renderChart(dates, inflows, outflows);
-    }
-    
-    // Listen for changes in the dropdown selection.
-    document.getElementById("countryFilter").addEventListener("change", updateChartByFilter);
-    
-    // Parse the CSV file using Papa Parse.
-    Papa.parse("data.csv", {
-      download: true,
-      header: true,
-      dynamicTyping: true,
-      skipEmptyLines: true,
-      complete: function(results) {
-        console.log("CSV Results:", results);
-        if (results.errors && results.errors.length > 0) {
-          console.error("CSV parse errors:", results.errors);
-          document.getElementById("loader").innerText = "Error loading data. Check console for details.";
-          return;
-        }
-        // Keep rows that contain more than one key.
-        allData = results.data.filter(row => Object.keys(row).length > 1);
-        updateChartByFilter();
-        hideLoader();
-      },
-      error: function(error) {
-        console.error("Error parsing CSV:", error);
-        document.getElementById("loader").innerText = "Error loading data.";
-      }
-    });
-  </script>
-</body>
-</html>
