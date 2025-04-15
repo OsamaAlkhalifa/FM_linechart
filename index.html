@@ -2,15 +2,15 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Refined Inflow and Outflow Chart with Country Filter</title>
+  <title>Refined Inflow and Outflow Chart by Country</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- Optional favicon to avoid favicon 404 -->
+  <!-- Minimal favicon to avoid 404 -->
   <link rel="icon" href="data:;base64,iVBORw0KGgo=">
-  <!-- Load Chart.js from CDN -->
+  <!-- Load Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- Load Chart.js date adapter (using date-fns adapter) -->
+  <!-- Load Chart.js date adapter (using date-fns) -->
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
-  <!-- Load Papa Parse from CDN for CSV parsing -->
+  <!-- Load Papa Parse for CSV parsing -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
   <style>
     body {
@@ -28,7 +28,7 @@
       font-size: 1.2em;
       margin-top: 20px;
     }
-    /* Filter dropdown in a top-right container */
+    /* Container for the filter dropdown */
     #filter-container {
       text-align: right;
       margin-bottom: 10px;
@@ -42,13 +42,14 @@
 <body>
   <h1>Refined Inflow and Outflow Chart</h1>
   
-  <!-- Dropdown to filter by country -->
+  <!-- Dropdown to select which country data to display -->
   <div id="filter-container">
-    <label for="countryFilter">Filter by Country: </label>
+    <label for="countryFilter">Select Data: </label>
     <select id="countryFilter">
-      <option value="All">All</option>
-      <option value="Iran">Iran</option>
-      <option value="Pakistan">Pakistan</option>
+      <!-- The value attribute will be used in our script -->
+      <option value="iran">Iran</option>
+      <option value="pakistan">Pakistan</option>
+      <option value="total">Total</option>
     </select>
   </div>
   
@@ -58,51 +59,26 @@
   </div>
   
   <script>
-    let allData = [];
-    let lineChartInstance;
+    let allData = [];       // This will store parsed CSV rows
+    let lineChartInstance;  // Reference to the current Chart.js instance
 
-    // Hide the loader after data is loaded or on error.
+    // Hide the loader element.
     function hideLoader() {
       document.getElementById("loader").style.display = "none";
     }
     
-    // Convert a date string (e.g., "2025-04-01") into a JavaScript Date object.
+    // Convert a date string (e.g. "2025-04-01") to a Date object.
     function parseDate(dateStr) {
-      let d = new Date(dateStr);
+      const d = new Date(dateStr);
       if (isNaN(d)) {
         console.error("Invalid date: " + dateStr);
       }
       return d;
     }
     
-    // Create or update the chart using the filtered data.
-    function updateChart(filteredData) {
-      const dates = [];
-      const inflows = [];
-      const outflows = [];
-      
-      filteredData.forEach(function(row) {
-        if (row.Date && row.Inflow !== undefined && row.Outflow !== undefined) {
-          dates.push(parseDate(row.Date));
-          inflows.push(row.Inflow);
-          outflows.push(row.Outflow);
-        }
-      });
-      
-      // Combine and sort the data by date.
-      const combinedData = dates.map((date, i) => ({
-        date: date,
-        inflow: inflows[i],
-        outflow: outflows[i]
-      })).sort((a, b) => a.date - b.date);
-      
-      const sortedDates = combinedData.map(item => item.date);
-      const sortedInflows = combinedData.map(item => item.inflow);
-      const sortedOutflows = combinedData.map(item => item.outflow);
-      
+    // Render (or re-create) the chart given arrays for dates, inflow, and outflow.
+    function renderChart(dates, inflows, outflows) {
       const ctx = document.getElementById('lineChart').getContext('2d');
-      
-      // If a chart already exists, destroy it before creating a new one.
       if (lineChartInstance) {
         lineChartInstance.destroy();
       }
@@ -110,11 +86,11 @@
       lineChartInstance = new Chart(ctx, {
         type: 'line',
         data: {
-          labels: sortedDates,
+          labels: dates,
           datasets: [
             {
               label: 'Inflow',
-              data: sortedInflows,
+              data: inflows,
               fill: false,
               borderColor: 'rgba(92, 184, 178, 1)',
               backgroundColor: 'rgba(92, 184, 178, 0.2)',
@@ -122,7 +98,7 @@
             },
             {
               label: 'Outflow',
-              data: sortedOutflows,
+              data: outflows,
               fill: false,
               borderColor: 'rgba(0, 51, 160, 1)',
               backgroundColor: 'rgba(0, 51, 160, 0.2)',
@@ -165,22 +141,43 @@
       });
     }
     
-    // Filter the data based on the selected country from the dropdown.
-    function filterAndUpdateChart() {
-      const selectedCountry = document.getElementById("countryFilter").value;
-      let filteredData = allData;
-      if (selectedCountry !== "All") {
-        filteredData = allData.filter(function(row) {
-          return row.Country && row.Country.trim() === selectedCountry;
-        });
-      }
-      updateChart(filteredData);
+    // This function reads the global allData array,
+    // selects the proper columns based on the dropdown filter,
+    // and then rebuilds the chart.
+    function updateChartByFilter() {
+      const selected = document.getElementById("countryFilter").value; // "iran", "pakistan", or "total"
+      let dates = [];
+      let inflows = [];
+      let outflows = [];
+      
+      // Sort allData by date (assuming each row has a Date column)
+      const sortedData = allData.sort((a, b) => new Date(a.Date) - new Date(b.Date));
+      
+      sortedData.forEach(row => {
+        if (row.Date) {
+          dates.push(parseDate(row.Date));
+          
+          if (selected === "iran") {
+            inflows.push(row["INFLOW - IRAN"]);
+            outflows.push(row["OUTFLOW - IRAN"]);
+          } else if (selected === "pakistan") {
+            inflows.push(row["INFLOW - PAKISTAN"]);
+            outflows.push(row["OUTFLOW - PAKISTAN"]);
+          } else if (selected === "total") {
+            inflows.push(row["TOTAL-INFLOW"]);
+            outflows.push(row["TOTAL-OUTFLOW"]);
+          }
+        }
+      });
+      
+      console.log("Updated chart with " + selected + " data. Rows:", sortedData.length);
+      renderChart(dates, inflows, outflows);
     }
     
-    // Listen for changes in the dropdown.
-    document.getElementById("countryFilter").addEventListener("change", filterAndUpdateChart);
+    // Set up an event listener for changes in the dropdown.
+    document.getElementById("countryFilter").addEventListener("change", updateChartByFilter);
     
-    // Use Papa Parse to load and parse data.csv.
+    // Use Papa Parse to load and parse the CSV file.
     Papa.parse("data.csv", {
       download: true,
       header: true,
@@ -193,9 +190,10 @@
           document.getElementById("loader").innerText = "Error loading data. Check console for details.";
           return;
         }
-        // Filter out any completely empty rows.
+        
+        // Store the parsed data globally.
         allData = results.data.filter(row => Object.keys(row).length > 1);
-        filterAndUpdateChart();
+        updateChartByFilter();
         hideLoader();
       },
       error: function(error) {
