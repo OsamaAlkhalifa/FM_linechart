@@ -2,203 +2,148 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Refined Inflow and Outflow Chart by Country</title>
+  <title>Inflow and Outflow by Country</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- Minimal favicon to avoid 404 -->
-  <link rel="icon" href="data:;base64,iVBORw0KGgo=">
-  <!-- Load Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- Load Chart.js date adapter (using date-fns) -->
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
-  <!-- Load Papa Parse -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
   <style>
     body {
       font-family: "Gill Sans Nova", "Gill Sans", sans-serif;
       padding: 20px;
-      background-color: #f7f7f7;
+      background-color: #f5f5f5;
       text-align: center;
     }
     #chart-container {
       width: 80%;
-      max-width: 1000px;
+      max-width: 2000px;
       margin: 0 auto;
     }
-    #loader {
-      font-size: 1.2em;
-      margin-top: 20px;
+    .filters {
+      margin-bottom: 20px;
     }
-    /* Container for filter dropdown */
-    #filter-container {
-      text-align: right;
-      margin-bottom: 10px;
-    }
-    #countryFilter {
+    select {
+      margin: 0 10px;
       padding: 5px;
-      font-size: 1em;
     }
   </style>
 </head>
 <body>
-  <h1>Refined Inflow and Outflow Chart</h1>
-  
-  <!-- Dropdown to select which series to display -->
-  <div id="filter-container">
-    <label for="countryFilter">Select Data: </label>
-    <select id="countryFilter">
-      <option value="iran">Iran</option>
-      <option value="pakistan">Pakistan</option>
-      <option value="total">Total</option>
+  <div class="filters">
+    <label for="country">Country:</label>
+    <select id="country">
+      <option value="TOTAL">TOTAL</option>
+      <option value="IRN">IRN</option>
+      <option value="PAK">PAK</option>
+    </select>
+
+    <label for="flow">Flow Type:</label>
+    <select id="flow">
+      <option value="BOTH">Inflow & Outflow</option>
+      <option value="INFLOW">Inflow Only</option>
+      <option value="OUTFLOW">Outflow Only</option>
     </select>
   </div>
-  
+
   <div id="chart-container">
     <canvas id="lineChart"></canvas>
-    <div id="loader">Loading data...</div>
   </div>
-  
-  <script>
-    let allData = [];       // Will hold parsed CSV rows
-    let lineChartInstance;  // Holds the current Chart instance
 
-    // Hide the loader element.
-    function hideLoader() {
-      document.getElementById("loader").style.display = "none";
-    }
-    
-    // Parse a date string into a Date object.
-    function parseDate(dateStr) {
-      // Log the raw string before parsing.
-      console.log("Parsing date from CSV:", dateStr);
-      const d = new Date(dateStr);
-      if (isNaN(d)) {
-        console.error("Invalid date encountered:", dateStr);
-      } else {
-        console.log("Parsed date:", d);
+  <script>
+    let chart; // Global chart variable
+
+    function updateChart(data, country, flowType) {
+      const dates = [];
+      const inflows = [];
+      const outflows = [];
+
+      data.forEach(row => {
+        dates.push(row.Date);
+
+        if (country === 'TOTAL') {
+          inflows.push(row.Inflow_IRN + row.Inflow_PAK);
+          outflows.push(row.Outflow_IRN + row.Outflow_PAK);
+        } else {
+          inflows.push(row['Inflow_' + country]);
+          outflows.push(row['Outflow_' + country]);
+        }
+      });
+
+      const datasets = [];
+
+      if (flowType === 'INFLOW' || flowType === 'BOTH') {
+        datasets.push({
+          label: 'Inflow',
+          data: inflows,
+          borderColor: 'rgba(92, 184, 178, 1)',
+          backgroundColor: 'rgba(231, 244, 243, 0.2)',
+          fill: false,
+          tension: 0.1
+        });
       }
-      return d;
-    }
-    
-    // Render (or re-render) the chart using the provided arrays.
-    function renderChart(dates, inflows, outflows) {
+
+      if (flowType === 'OUTFLOW' || flowType === 'BOTH') {
+        datasets.push({
+          label: 'Outflow',
+          data: outflows,
+          borderColor: 'rgba(0, 51, 160, 1)',
+          backgroundColor: 'rgba(217, 224, 241, 0.2)',
+          fill: false,
+          tension: 0.1
+        });
+      }
+
+      if (chart) chart.destroy(); // Remove previous chart
+
       const ctx = document.getElementById('lineChart').getContext('2d');
-      if (lineChartInstance) {
-        lineChartInstance.destroy();
-      }
-      
-      lineChartInstance = new Chart(ctx, {
+      chart = new Chart(ctx, {
         type: 'line',
         data: {
           labels: dates,
-          datasets: [
-            {
-              label: 'Inflow',
-              data: inflows,
-              fill: false,
-              borderColor: 'rgba(92, 184, 178, 1)',
-              backgroundColor: 'rgba(92, 184, 178, 0.2)',
-              tension: 0.1
-            },
-            {
-              label: 'Outflow',
-              data: outflows,
-              fill: false,
-              borderColor: 'rgba(0, 51, 160, 1)',
-              backgroundColor: 'rgba(0, 51, 160, 0.2)',
-              tension: 0.1
-            }
-          ]
+          datasets: datasets
         },
         options: {
           responsive: true,
-          interaction: { mode: 'index', intersect: false },
-          plugins: { tooltip: { mode: 'index', intersect: false } },
+          plugins: {
+            title: {
+              display: true,
+              text: `Flow Data for ${country}`
+            }
+          },
           scales: {
             x: {
-              type: 'time',
-              time: {
-                unit: 'month',
-                tooltipFormat: 'yyyy-MM'
-              },
               title: { display: true, text: 'Date' }
             },
-            y: { title: { display: true, text: 'Amount' } }
+            y: {
+              title: { display: true, text: 'Count' }
+            }
           }
         }
       });
     }
-    
-    // Update the chart with a full sorted list of dates from the CSV and series data based on the dropdown.
-    function updateChartByFilter() {
-      const selected = document.getElementById("countryFilter").value;  // "iran", "pakistan", or "total"
-      console.log("Dropdown selected:", selected);
-      
-      // Sort the data by date.
-      const sortedData = allData.slice().sort((a, b) => new Date(a.Date) - new Date(b.Date));
-      
-      // Build the full x-axis from the CSV (expecting 16 months).
-      const dates = sortedData.map(row => {
-        const parsed = parseDate(row.Date);
-        return parsed;
-      });
-      
-      // Log dates for verification.
-      console.log("X-Axis Dates from CSV:", dates);
-      
-      // Map series values based on selection.
-      let inflows, outflows;
-      if (selected === "iran") {
-        inflows = sortedData.map(row => row["INFLOW - IRAN"]);
-        outflows = sortedData.map(row => row["OUTFLOW - IRAN"]);
-      } else if (selected === "pakistan") {
-        inflows = sortedData.map(row => row["INFLOW - PAKISTAN"]);
-        outflows = sortedData.map(row => row["OUTFLOW - PAKISTAN"]);
-      } else if (selected === "total") {
-        inflows = sortedData.map(row => row["TOTAL-INFLOW"]);
-        outflows = sortedData.map(row => row["TOTAL-OUTFLOW"]);
-      }
-      
-      console.log("Selected series (" + selected + ") Inflows:", inflows);
-      console.log("Selected series (" + selected + ") Outflows:", outflows);
-      
-      renderChart(dates, inflows, outflows);
-    }
-    
-    // Listen for changes in the dropdown.
-    document.getElementById("countryFilter").addEventListener("change", updateChartByFilter);
-    
-    // Parse the CSV file using Papa Parse.
+
     Papa.parse("data.csv", {
       download: true,
       header: true,
       dynamicTyping: true,
-      skipEmptyLines: true,
       complete: function(results) {
-        console.log("Papa Parse complete callback reached.");
-        console.log("Results object:", results);
-        if (results.errors && results.errors.length > 0) {
-          console.error("CSV parse errors:", results.errors);
-          document.getElementById("loader").innerText = "Error parsing CSV. Check console for details.";
-          return;
-        }
-        if (!results.data || results.data.length === 0) {
-          console.error("No data found in CSV.");
-          document.getElementById("loader").innerText = "CSV loaded but no data found!";
-          return;
-        }
-        // Log each row’s Date value from the CSV.
-        results.data.forEach((row, index) => {
-          console.log("Row", index, "Date:", row.Date);
+        const rawData = results.data;
+        const countrySelect = document.getElementById('country');
+        const flowSelect = document.getElementById('flow');
+
+        // Initial render
+        updateChart(rawData, countrySelect.value, flowSelect.value);
+
+        // Update chart when filters change
+        countrySelect.addEventListener('change', () => {
+          updateChart(rawData, countrySelect.value, flowSelect.value);
         });
-        
-        allData = results.data;
-        console.log("CSV loaded with " + allData.length + " rows.");
-        updateChartByFilter();
-        hideLoader();
+
+        flowSelect.addEventListener('change', () => {
+          updateChart(rawData, countrySelect.value, flowSelect.value);
+        });
       },
       error: function(error) {
-        console.error("Papa Parse error:", error);
-        document.getElementById("loader").innerText = "Error loading CSV!";
+        console.error("Error parsing CSV:", error);
       }
     });
   </script>
