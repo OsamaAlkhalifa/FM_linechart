@@ -32,7 +32,7 @@
     <label for="country">Country:</label>
     <select id="country">
       <option value="TOTAL">TOTAL</option>
-      <option value="IRN">IRN</option>
+      <option value="IRAN">IRAN</option>
       <option value="PAK">PAK</option>
     </select>
 
@@ -49,7 +49,7 @@
   </div>
 
   <script>
-    let chart; // Global chart variable
+    let chart;
 
     function updateChart(data, country, flowType) {
       const dates = [];
@@ -57,42 +57,42 @@
       const outflows = [];
 
       data.forEach(row => {
-        dates.push(row.Date);
+        dates.push(row["date"]);
 
-        if (country === 'TOTAL') {
-          inflows.push(row.Inflow_IRN + row.Inflow_PAK);
-          outflows.push(row.Outflow_IRN + row.Outflow_PAK);
+        if (country === "TOTAL") {
+          inflows.push(row["TOTAL - INFLOW"]);
+          outflows.push(row["TOTAL - OUTFLOW"]);
         } else {
-          inflows.push(row['Inflow_' + country]);
-          outflows.push(row['Outflow_' + country]);
+          inflows.push(row[`INFLOW - ${country}`]);
+          outflows.push(row[`OUTFLOW - ${country}`]);
         }
       });
 
       const datasets = [];
 
-      if (flowType === 'INFLOW' || flowType === 'BOTH') {
+      if (flowType === "INFLOW" || flowType === "BOTH") {
         datasets.push({
-          label: 'Inflow',
+          label: "Inflow",
           data: inflows,
-          borderColor: 'rgba(92, 184, 178, 1)',
-          backgroundColor: 'rgba(231, 244, 243, 0.2)',
+          borderColor: "rgba(92, 184, 178, 1)",
+          backgroundColor: "rgba(231, 244, 243, 0.2)",
           fill: false,
           tension: 0.1
         });
       }
 
-      if (flowType === 'OUTFLOW' || flowType === 'BOTH') {
+      if (flowType === "OUTFLOW" || flowType === "BOTH") {
         datasets.push({
-          label: 'Outflow',
+          label: "Outflow",
           data: outflows,
-          borderColor: 'rgba(0, 51, 160, 1)',
-          backgroundColor: 'rgba(217, 224, 241, 0.2)',
+          borderColor: "rgba(0, 51, 160, 1)",
+          backgroundColor: "rgba(217, 224, 241, 0.2)",
           fill: false,
           tension: 0.1
         });
       }
 
-      if (chart) chart.destroy(); // Remove previous chart
+      if (chart) chart.destroy();
 
       const ctx = document.getElementById('lineChart').getContext('2d');
       chart = new Chart(ctx, {
@@ -106,7 +106,7 @@
           plugins: {
             title: {
               display: true,
-              text: `Flow Data for ${country}`
+              text: `Flow Data: ${country}`
             }
           },
           scales: {
@@ -126,19 +126,17 @@
       header: true,
       dynamicTyping: true,
       complete: function(results) {
-        const rawData = results.data;
-        const countrySelect = document.getElementById('country');
-        const flowSelect = document.getElementById('flow');
+        const rawData = results.data.filter(row => row["date"]);
+        const countrySelect = document.getElementById("country");
+        const flowSelect = document.getElementById("flow");
 
-        // Initial render
         updateChart(rawData, countrySelect.value, flowSelect.value);
 
-        // Update chart when filters change
-        countrySelect.addEventListener('change', () => {
+        countrySelect.addEventListener("change", () => {
           updateChart(rawData, countrySelect.value, flowSelect.value);
         });
 
-        flowSelect.addEventListener('change', () => {
+        flowSelect.addEventListener("change", () => {
           updateChart(rawData, countrySelect.value, flowSelect.value);
         });
       },
