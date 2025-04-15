@@ -28,7 +28,7 @@
       font-size: 1.2em;
       margin-top: 20px;
     }
-    /* Container for the filter dropdown */
+    /* Container for filter dropdown */
     #filter-container {
       text-align: right;
       margin-bottom: 10px;
@@ -58,24 +58,28 @@
   </div>
   
   <script>
-    let allData = [];       // Global storage for CSV rows
-    let lineChartInstance;  // Holds our current Chart instance
+    let allData = [];       // Will hold parsed CSV rows
+    let lineChartInstance;  // Holds the current Chart instance
 
     // Hide the loader element.
     function hideLoader() {
       document.getElementById("loader").style.display = "none";
     }
     
-    // Convert a date string into a Date object.
+    // Parse a date string into a Date object.
     function parseDate(dateStr) {
+      // Log the raw string before parsing.
+      console.log("Parsing date from CSV:", dateStr);
       const d = new Date(dateStr);
       if (isNaN(d)) {
         console.error("Invalid date encountered:", dateStr);
+      } else {
+        console.log("Parsed date:", d);
       }
       return d;
     }
     
-    // Render the chart using provided arrays for x-axis (dates) and y-axis (inflow/outflow)
+    // Render (or re-render) the chart using the provided arrays.
     function renderChart(dates, inflows, outflows) {
       const ctx = document.getElementById('lineChart').getContext('2d');
       if (lineChartInstance) {
@@ -112,7 +116,10 @@
           scales: {
             x: {
               type: 'time',
-              time: { unit: 'month', tooltipFormat: 'yyyy-MM' },
+              time: {
+                unit: 'month',
+                tooltipFormat: 'yyyy-MM'
+              },
               title: { display: true, text: 'Date' }
             },
             y: { title: { display: true, text: 'Amount' } }
@@ -121,17 +128,24 @@
       });
     }
     
-    // Update the chart based on the dropdown selection.
-    // The x-axis uses the full set of dates from the CSV (expected 16 months).
+    // Update the chart with a full sorted list of dates from the CSV and series data based on the dropdown.
     function updateChartByFilter() {
       const selected = document.getElementById("countryFilter").value;  // "iran", "pakistan", or "total"
-      // Create a sorted copy of allData by date.
+      console.log("Dropdown selected:", selected);
+      
+      // Sort the data by date.
       const sortedData = allData.slice().sort((a, b) => new Date(a.Date) - new Date(b.Date));
       
-      // Build the full x-axis of dates.
-      const dates = sortedData.map(row => parseDate(row.Date));
+      // Build the full x-axis from the CSV (expecting 16 months).
+      const dates = sortedData.map(row => {
+        const parsed = parseDate(row.Date);
+        return parsed;
+      });
       
-      // Based on the selection, extract the corresponding series values.
+      // Log dates for verification.
+      console.log("X-Axis Dates from CSV:", dates);
+      
+      // Map series values based on selection.
       let inflows, outflows;
       if (selected === "iran") {
         inflows = sortedData.map(row => row["INFLOW - IRAN"]);
@@ -144,14 +158,13 @@
         outflows = sortedData.map(row => row["TOTAL-OUTFLOW"]);
       }
       
-      console.log("Full x-axis (dates):", dates);
-      console.log("Selected series (" + selected + ") inflows:", inflows);
-      console.log("Selected series (" + selected + ") outflows:", outflows);
+      console.log("Selected series (" + selected + ") Inflows:", inflows);
+      console.log("Selected series (" + selected + ") Outflows:", outflows);
       
       renderChart(dates, inflows, outflows);
     }
     
-    // Event listener for changes in the dropdown.
+    // Listen for changes in the dropdown.
     document.getElementById("countryFilter").addEventListener("change", updateChartByFilter);
     
     // Parse the CSV file using Papa Parse.
@@ -161,25 +174,31 @@
       dynamicTyping: true,
       skipEmptyLines: true,
       complete: function(results) {
-        console.log("CSV parsing complete:", results);
+        console.log("Papa Parse complete callback reached.");
+        console.log("Results object:", results);
         if (results.errors && results.errors.length > 0) {
           console.error("CSV parse errors:", results.errors);
-          document.getElementById("loader").innerText = "Error loading data. Check console for details.";
+          document.getElementById("loader").innerText = "Error parsing CSV. Check console for details.";
           return;
         }
-        // Check that we have valid rows.
-        allData = results.data.filter(row => Object.keys(row).length > 1);
-        if(allData.length === 0) {
-          console.error("No valid data found in CSV.");
-          document.getElementById("loader").innerText = "No valid data found.";
+        if (!results.data || results.data.length === 0) {
+          console.error("No data found in CSV.");
+          document.getElementById("loader").innerText = "CSV loaded but no data found!";
           return;
         }
+        // Log each row’s Date value from the CSV.
+        results.data.forEach((row, index) => {
+          console.log("Row", index, "Date:", row.Date);
+        });
+        
+        allData = results.data;
+        console.log("CSV loaded with " + allData.length + " rows.");
         updateChartByFilter();
         hideLoader();
       },
       error: function(error) {
-        console.error("Error while parsing CSV:", error);
-        document.getElementById("loader").innerText = "Error loading data.";
+        console.error("Papa Parse error:", error);
+        document.getElementById("loader").innerText = "Error loading CSV!";
       }
     });
   </script>
