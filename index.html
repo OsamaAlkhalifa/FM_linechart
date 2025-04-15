@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <title>Refined Inflow and Outflow Chart with Country Filter</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Optionally add a favicon to avoid 404 for favicon.ico -->
+  <link rel="icon" href="data:;base64,iVBORw0KGgo=">
   <!-- Load Chart.js from CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Load Papa Parse from CDN for CSV parsing -->
@@ -57,12 +59,12 @@
     let allData = [];
     let lineChartInstance;
 
-    // Hide the loader after data is loaded or error occurs
+    // Hide the loader after data is loaded or when an error occurs
     function hideLoader() {
       document.getElementById("loader").style.display = "none";
     }
     
-    // Convert a date string (e.g., '2025-04-01') into a JavaScript Date object.
+    // Convert a date string (e.g., '2025-04-01') into a JavaScript Date object
     function parseDate(dateStr) {
       let d = new Date(dateStr);
       if (isNaN(d)) {
@@ -71,7 +73,7 @@
       return d;
     }
     
-    // Create or update the chart using filtered data.
+    // Create or update the chart using the filtered data
     function updateChart(filteredData) {
       const dates = [];
       const inflows = [];
@@ -86,7 +88,7 @@
         }
       });
       
-      // If necessary, sort the data by date.
+      // Sort the data by date, in case the CSV is not ordered.
       const combinedData = dates.map((date, i) => ({
         date: date,
         inflow: inflows[i],
@@ -177,7 +179,7 @@
       updateChart(filteredData);
     }
     
-    // Listen for changes in the dropdown.
+    // Listen for dropdown changes.
     document.getElementById("countryFilter").addEventListener("change", filterAndUpdateChart);
     
     // Use Papa Parse to load and parse data.csv.
@@ -185,14 +187,16 @@
       download: true,
       header: true,
       dynamicTyping: true,
+      skipEmptyLines: true, // Helps ignore empty lines that could cause parsing errors
       complete: function(results) {
         console.log("CSV Results:", results);
         if (results.errors && results.errors.length > 0) {
+          // Log detailed error information for debugging.
           console.error("CSV parse errors:", results.errors);
-          document.getElementById("loader").innerText = "Error loading data.";
+          document.getElementById("loader").innerText = "Error loading data. Check console for details.";
           return;
         }
-        // Filter out any empty rows.
+        // Filter out any completely empty rows.
         allData = results.data.filter(row => Object.keys(row).length > 1);
         filterAndUpdateChart();
         hideLoader();
