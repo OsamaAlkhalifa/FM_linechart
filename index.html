@@ -24,7 +24,7 @@
       font-size: 1.2em;
       margin-top: 20px;
     }
-    /* Style for filter dropdown placed above the chart */
+    /* Filter dropdown in a top-right container */
     #filter-container {
       text-align: right;
       margin-bottom: 10px;
@@ -38,7 +38,7 @@
 <body>
   <h1>Refined Inflow and Outflow Chart</h1>
   
-  <!-- Filter Dropdown placed at the top-right -->
+  <!-- Dropdown to filter by country -->
   <div id="filter-container">
     <label for="countryFilter">Filter by Country: </label>
     <select id="countryFilter">
@@ -57,47 +57,62 @@
     let allData = [];
     let lineChartInstance;
 
-    // Hide the loader once data is loaded
+    // Hide the loader after data is loaded or error occurs
     function hideLoader() {
       document.getElementById("loader").style.display = "none";
     }
     
-    // Convert a date string (e.g., '2025-04-01') to a JavaScript Date object
+    // Convert a date string (e.g., '2025-04-01') into a JavaScript Date object.
     function parseDate(dateStr) {
-      return new Date(dateStr);
+      let d = new Date(dateStr);
+      if (isNaN(d)) {
+        console.error("Invalid date: " + dateStr);
+      }
+      return d;
     }
     
-    // Function to update or create the chart
+    // Create or update the chart using filtered data.
     function updateChart(filteredData) {
       const dates = [];
       const inflows = [];
       const outflows = [];
       
       filteredData.forEach(function(row) {
-        // Ensure the row has the required fields
+        // Check that required data exists before using the row.
         if (row.Date && row.Inflow !== undefined && row.Outflow !== undefined) {
           dates.push(parseDate(row.Date));
           inflows.push(row.Inflow);
           outflows.push(row.Outflow);
         }
       });
-
-      // If the chart already exists, update its data; otherwise, create a new chart.
+      
+      // If necessary, sort the data by date.
+      const combinedData = dates.map((date, i) => ({
+        date: date,
+        inflow: inflows[i],
+        outflow: outflows[i]
+      })).sort((a, b) => a.date - b.date);
+      
+      const sortedDates = combinedData.map(item => item.date);
+      const sortedInflows = combinedData.map(item => item.inflow);
+      const sortedOutflows = combinedData.map(item => item.outflow);
+      
+      // Either update an existing chart or create a new chart.
       if (lineChartInstance) {
-        lineChartInstance.data.labels = dates;
-        lineChartInstance.data.datasets[0].data = inflows;
-        lineChartInstance.data.datasets[1].data = outflows;
+        lineChartInstance.data.labels = sortedDates;
+        lineChartInstance.data.datasets[0].data = sortedInflows;
+        lineChartInstance.data.datasets[1].data = sortedOutflows;
         lineChartInstance.update();
       } else {
         const ctx = document.getElementById('lineChart').getContext('2d');
         lineChartInstance = new Chart(ctx, {
           type: 'line',
           data: {
-            labels: dates,
+            labels: sortedDates,
             datasets: [
               {
                 label: 'Inflow',
-                data: inflows,
+                data: sortedInflows,
                 fill: false,
                 borderColor: 'rgba(92, 184, 178, 1)',
                 backgroundColor: 'rgba(92, 184, 178, 0.2)',
@@ -105,7 +120,7 @@
               },
               {
                 label: 'Outflow',
-                data: outflows,
+                data: sortedOutflows,
                 fill: false,
                 borderColor: 'rgba(0, 51, 160, 1)',
                 backgroundColor: 'rgba(0, 51, 160, 0.2)',
@@ -133,13 +148,13 @@
                   tooltipFormat: 'yyyy-MM-dd'
                 },
                 title: {
-                  display: false,
+                  display: true,
                   text: 'Date'
                 }
               },
               y: {
                 title: {
-                  display: false,
+                  display: true,
                   text: 'Amount'
                 }
               }
@@ -148,30 +163,37 @@
         });
       }
     }
-
-    // Filter the CSV data based on the chosen country and update the chart
+    
+    // Filter the data based on the selected country from the dropdown.
     function filterAndUpdateChart() {
       const selectedCountry = document.getElementById("countryFilter").value;
       let filteredData = allData;
       if (selectedCountry !== "All") {
         filteredData = allData.filter(function(row) {
-          return row.Country === selectedCountry;
+          // Use trim() to avoid issues with extra whitespace.
+          return row.Country && row.Country.trim() === selectedCountry;
         });
       }
       updateChart(filteredData);
     }
     
-    // Attach event listener to the filter dropdown so that the chart updates on selection
+    // Listen for changes in the dropdown.
     document.getElementById("countryFilter").addEventListener("change", filterAndUpdateChart);
-
-    // Parse the CSV file using Papa Parse
+    
+    // Use Papa Parse to load and parse data.csv.
     Papa.parse("data.csv", {
       download: true,
       header: true,
       dynamicTyping: true,
       complete: function(results) {
-        allData = results.data;
-        // Initially, update the chart with all data
+        console.log("CSV Results:", results);
+        if (results.errors && results.errors.length > 0) {
+          console.error("CSV parse errors:", results.errors);
+          document.getElementById("loader").innerText = "Error loading data.";
+          return;
+        }
+        // Filter out any empty rows.
+        allData = results.data.filter(row => Object.keys(row).length > 1);
         filterAndUpdateChart();
         hideLoader();
       },
