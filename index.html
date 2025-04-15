@@ -8,9 +8,9 @@
   <link rel="icon" href="data:;base64,iVBORw0KGgo=">
   <!-- Load Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- Load Chart.js date adapter (using date-fns) -->
+  <!-- Load the Chart.js date adapter (using date-fns) -->
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
-  <!-- Load Papa Parse for CSV parsing -->
+  <!-- Load Papa Parse -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
   <style>
     body {
@@ -42,11 +42,11 @@
 <body>
   <h1>Refined Inflow and Outflow Chart</h1>
   
-  <!-- Dropdown to select which country data to display -->
+  <!-- Dropdown to select which data to display -->
   <div id="filter-container">
     <label for="countryFilter">Select Data: </label>
     <select id="countryFilter">
-      <!-- The value attribute will be used in our script -->
+      <!-- The value attribute controls which series are shown -->
       <option value="iran">Iran</option>
       <option value="pakistan">Pakistan</option>
       <option value="total">Total</option>
@@ -59,24 +59,24 @@
   </div>
   
   <script>
-    let allData = [];       // This will store parsed CSV rows
-    let lineChartInstance;  // Reference to the current Chart.js instance
+    let allData = [];       // Global storage for CSV rows
+    let lineChartInstance;  // Reference to our Chart.js chart
 
     // Hide the loader element.
     function hideLoader() {
       document.getElementById("loader").style.display = "none";
     }
     
-    // Convert a date string (e.g. "2025-04-01") to a Date object.
+    // Parse a date string (e.g., "2025-04-01") into a Date object.
     function parseDate(dateStr) {
       const d = new Date(dateStr);
       if (isNaN(d)) {
-        console.error("Invalid date: " + dateStr);
+        console.error("Invalid date encountered:", dateStr);
       }
       return d;
     }
     
-    // Render (or re-create) the chart given arrays for dates, inflow, and outflow.
+    // Create (or re-create) the chart with the given x-axis (dates) and y-axis arrays.
     function renderChart(dates, inflows, outflows) {
       const ctx = document.getElementById('lineChart').getContext('2d');
       if (lineChartInstance) {
@@ -108,16 +108,8 @@
         },
         options: {
           responsive: true,
-          interaction: {
-            mode: 'index',
-            intersect: false
-          },
-          plugins: {
-            tooltip: {
-              mode: 'index',
-              intersect: false
-            }
-          },
+          interaction: { mode: 'index', intersect: false },
+          plugins: { tooltip: { mode: 'index', intersect: false } },
           scales: {
             x: {
               type: 'time',
@@ -141,43 +133,39 @@
       });
     }
     
-    // This function reads the global allData array,
-    // selects the proper columns based on the dropdown filter,
-    // and then rebuilds the chart.
+    // Update the chart based on the filter selection.
+    // We always use the full set of dates from the CSV, ensuring the x-axis remains identical.
     function updateChartByFilter() {
-      const selected = document.getElementById("countryFilter").value; // "iran", "pakistan", or "total"
-      let dates = [];
-      let inflows = [];
-      let outflows = [];
+      const selected = document.getElementById("countryFilter").value;  // "iran", "pakistan", or "total"
+      // Make a sorted copy of allData by date:
+      const sortedData = allData.slice().sort((a, b) => new Date(a.Date) - new Date(b.Date));
+      // Always compute the full x-axis from the Date column.
+      const dates = sortedData.map(row => parseDate(row.Date));
       
-      // Sort allData by date (assuming each row has a Date column)
-      const sortedData = allData.sort((a, b) => new Date(a.Date) - new Date(b.Date));
-      
-      sortedData.forEach(row => {
-        if (row.Date) {
-          dates.push(parseDate(row.Date));
-          
-          if (selected === "iran") {
-            inflows.push(row["INFLOW - IRAN"]);
-            outflows.push(row["OUTFLOW - IRAN"]);
-          } else if (selected === "pakistan") {
-            inflows.push(row["INFLOW - PAKISTAN"]);
-            outflows.push(row["OUTFLOW - PAKISTAN"]);
-          } else if (selected === "total") {
-            inflows.push(row["TOTAL-INFLOW"]);
-            outflows.push(row["TOTAL-OUTFLOW"]);
-          }
-        }
+      // For the series values, simply map the corresponding column:
+      let inflows = sortedData.map(row => {
+        if (selected === "iran") return row["INFLOW - IRAN"];
+        else if (selected === "pakistan") return row["INFLOW - PAKISTAN"];
+        else if (selected === "total") return row["TOTAL-INFLOW"];
       });
       
-      console.log("Updated chart with " + selected + " data. Rows:", sortedData.length);
+      let outflows = sortedData.map(row => {
+        if (selected === "iran") return row["OUTFLOW - IRAN"];
+        else if (selected === "pakistan") return row["OUTFLOW - PAKISTAN"];
+        else if (selected === "total") return row["TOTAL-OUTFLOW"];
+      });
+      
+      console.log("X-Axis Dates:", dates);
+      console.log("Selected series (" + selected + ") - Inflows:", inflows);
+      console.log("Selected series (" + selected + ") - Outflows:", outflows);
+      
       renderChart(dates, inflows, outflows);
     }
     
-    // Set up an event listener for changes in the dropdown.
+    // Listen for changes in the dropdown selection.
     document.getElementById("countryFilter").addEventListener("change", updateChartByFilter);
     
-    // Use Papa Parse to load and parse the CSV file.
+    // Parse the CSV file using Papa Parse.
     Papa.parse("data.csv", {
       download: true,
       header: true,
@@ -190,8 +178,7 @@
           document.getElementById("loader").innerText = "Error loading data. Check console for details.";
           return;
         }
-        
-        // Store the parsed data globally.
+        // Keep rows that contain more than one key.
         allData = results.data.filter(row => Object.keys(row).length > 1);
         updateChartByFilter();
         hideLoader();
