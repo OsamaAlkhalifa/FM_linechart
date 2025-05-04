@@ -20,7 +20,7 @@
     #chart-container {
     width: 100%;
     max-width: 1000px;
-    aspect-ratio: 2 / 1;
+    height: 400px
     margin: 0 auto;
     padding: 0;
     box-sizing: border-box;
@@ -29,10 +29,9 @@
 
 canvas {
     width: 100% !important;
-    height: auto !important;
+    height: 100% !important;
     display: block;
     margin: 0 auto;
-    padding: 0;
 }
 
 
@@ -187,7 +186,7 @@ canvas {
                     },
                     options: {
                         responsive: true,
-                        maintainAspectRatio: true,
+                        maintainAspectRatio: false,
                         scales: {
                             x: {
                                 title: {
@@ -243,7 +242,7 @@ canvas {
                     },
                     options: {
                         responsive: true,
-                        maintainAspectRatio: true,
+                        maintainAspectRatio: false,
                         scales: {
                             x: {
                                 title: {
@@ -290,7 +289,7 @@ canvas {
                     },
                     options: {
                         responsive: true,
-                        maintainAspectRatio: true,
+                        maintainAspectRatio: false,
                         scales: {
                             x: {
                                 title: {
