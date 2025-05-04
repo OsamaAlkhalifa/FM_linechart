@@ -32,6 +32,7 @@ canvas {
     height: 100% !important;
     display: block;
     margin: 0 auto;
+    padding: 0;
 }
 
 
@@ -73,6 +74,16 @@ canvas {
           border: 1px solid #ccc;
           border-top: none;
       }
+.tab-inner {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 0;
+}
+ .tab-inner {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 0;
+}
 
   </style>
 </head>
@@ -80,31 +91,38 @@ canvas {
 
 
 
-    <div class="tab">
-        <center>
-            <button class="tablinks active" onclick="openCity(event, 'Total')">Total</button>
-            <button class="tablinks" onclick="openCity(event, 'IRN')">IRN</button>
-            <button class="tablinks" onclick="openCity(event, 'PAK')">PAK</button>
-        </center>
-    </div>
+<div class="tab">
+    <center>
+        <button class="tablinks active" onclick="openCity(event, 'Total')">Total</button>
+        <button class="tablinks" onclick="openCity(event, 'IRN')">IRN</button>
+        <button class="tablinks" onclick="openCity(event, 'PAK')">PAK</button>
+    </center>
+</div>
 
-    <div id="Total" class="tabcontent" style="display: block;">
+<div id="Total" class="tabcontent" style="display: block;">
+    <div class="tab-inner">
         <div id="chart-container">
             <canvas id="lineChart1"></canvas>
         </div>
     </div>
+</div>
 
-    <div id="IRN" class="tabcontent" style="display: none;">
+<div id="IRN" class="tabcontent" style="display: none;">
+    <div class="tab-inner">
         <div id="chart-container">
             <canvas id="lineChart2"></canvas>
         </div>
     </div>
+</div>
 
-    <div id="PAK" class="tabcontent" style="display: none;">
+<div id="PAK" class="tabcontent" style="display: none;">
+    <div class="tab-inner">
         <div id="chart-container">
             <canvas id="lineChart3"></canvas>
         </div>
     </div>
+</div>
+
 
 
 
