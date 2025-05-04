@@ -17,17 +17,22 @@
           text-align: center;
       }
 
-      #chart-container {
+    #chart-container {
     width: 100%;
     max-width: 1000px;
     aspect-ratio: 2 / 1;
     margin: 0 auto;
+    padding: 0;
+    box-sizing: border-box;
     position: relative;
 }
 
 canvas {
     width: 100% !important;
     height: auto !important;
+    display: block;
+    margin: 0 auto;
+    padding: 0;
 }
 
 
@@ -69,10 +74,7 @@ canvas {
           border: 1px solid #ccc;
           border-top: none;
       }
-    canvas {
-    width: 100% !important;
-    height: 100% !important;
-}
+
   </style>
 </head>
 <body>
